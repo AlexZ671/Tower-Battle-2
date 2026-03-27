@@ -173,6 +173,44 @@ export const ENEMY_TYPES = {
     color: '#c0392b', reward: 400, minWave: 40,
     special: 'spawn_walk', spawnInterval: 4, isBoss: true,
   },
+  // ═══════ Боссы 2-го цикла (60-100) ═══════
+  archon: {
+    name: 'Архонт Тьмы',
+    hp: 2000, speed: 0.7, radius: 20,
+    color: '#1a0033', reward: 300, minWave: 60,
+    special: 'dark_aura', darkRadius: 150, detectRange: 70,
+    teleportCooldown: 6, teleportJump: 3,
+    slowImmune: true, isBoss: true,
+  },
+  colossus: {
+    name: 'Колосс',
+    hp: 3500, speed: 0.3, radius: 28,
+    color: '#5c3a1e', reward: 400, minWave: 70,
+    special: 'tower_disable', disableRadius: 100, disableDuration: 2,
+    armor: 10, slowImmune: true, isBoss: true,
+  },
+  plague_lord: {
+    name: 'Чумной повелитель',
+    hp: 2200, speed: 0.5, radius: 22,
+    color: '#2d5a1e', reward: 350, minWave: 80,
+    special: 'tower_slow', slowAuraRadius: 180, towerSlowFactor: 0.4,
+    isBoss: true,
+  },
+  chronos: {
+    name: 'Хронос',
+    hp: 1800, speed: 0.9, radius: 20,
+    color: '#1a3a5c', reward: 350, minWave: 90,
+    special: 'tower_slow', slowAuraRadius: 220, towerSlowFactor: 0.3,
+    slowImmune: true, isBoss: true,
+  },
+  absolute: {
+    name: 'Абсолют',
+    hp: 5000, speed: 0.4, radius: 30,
+    color: '#0a0a0a', reward: 600, minWave: 100,
+    special: 'shield_self', shieldMaxHp: 1500, shieldRegen: 0.03,
+    armor: 12, slowImmune: true, isBoss: true,
+  },
+
   // ═══════ Монстры Тьмы (с 30 волны) ═══════
   shadow: {
     name: 'Тень',
@@ -290,8 +328,8 @@ export class Enemy {
     // Берсерк / Чемпион: ярость
     // (скорость пересчитывается в update)
 
-    // Бронированный / Рыцарь / Голем: броня
-    if (this.special === 'armor') {
+    // Бронированный / Рыцарь / Голем / Колосс / Абсолют: броня
+    if (def.armor) {
       this.armor = def.armor;
     }
 
@@ -352,11 +390,18 @@ export class Enemy {
       this.weakenFactor = def.weakenFactor;
     }
 
-    // Теневой лорд: аура тьмы (даёт стелс союзникам)
+    // Теневой лорд / Архонт: аура тьмы (даёт стелс союзникам)
     if (this.special === 'dark_aura') {
       this.darkRadius = def.darkRadius;
       this.detectRange = def.detectRange;
       this.stealthed = true;
+      // Архонт также телепортируется
+      if (def.teleportCooldown) {
+        this.teleportCooldown = def.teleportCooldown;
+        this.teleportJump = def.teleportJump;
+        this.teleportTimer = def.teleportCooldown;
+        this.teleportFlash = 0;
+      }
     }
 
     this.waveNumber = waveNumber;
@@ -476,13 +521,28 @@ export class Enemy {
       this.shieldHp = Math.min(this.shieldMaxHp, this.shieldHp + this.shieldMaxHp * this.shieldRegen * dt);
     }
 
-    // ── Теневой лорд: аура тьмы (даёт стелс союзникам) ──
+    // ── Теневой лорд / Архонт: аура тьмы (даёт стелс союзникам) ──
     if (this.special === 'dark_aura' && allEnemies) {
       for (const e of allEnemies) {
         if (!e.alive || e === this) continue;
         const dx = e.x - this.x, dy = e.y - this.y;
         if (Math.sqrt(dx * dx + dy * dy) <= this.darkRadius) {
-          e.darkAuraStealthTimer = 0.5; // стелс на 0.5с, обновляется каждый кадр
+          e.darkAuraStealthTimer = 0.5;
+        }
+      }
+      // Архонт: телепорт
+      if (this.teleportCooldown) {
+        this.teleportTimer -= dt;
+        if (this.teleportTimer <= 0) {
+          this.teleportTimer = this.teleportCooldown;
+          const newIndex = Math.min(this.pathIndex + this.teleportJump, this.path.length - 1);
+          if (newIndex > this.pathIndex) {
+            this.pathIndex = newIndex;
+            this.x = this.path[this.pathIndex].x;
+            this.y = this.path[this.pathIndex].y;
+            this.teleportFlash = 0.3;
+            sound.teleport();
+          }
         }
       }
     }

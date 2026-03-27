@@ -14,6 +14,13 @@ export const ACHIEVEMENTS = {
   kill_reaper:    { name: 'Жнец жнецов',           desc: 'Убейте Жнеца',                  icon: '💀', secret: true },
   kill_leviathan: { name: 'Бездна повержена',      desc: 'Убейте Левиафана',              icon: '🌊', secret: true },
 
+  // Боссы 2-го цикла
+  kill_archon:      { name: 'Тень повержена',        desc: 'Убейте Архонта Тьмы',         icon: '🌑', secret: true },
+  kill_colossus:    { name: 'Давид и Голиаф',        desc: 'Убейте Колосса',              icon: '🗿', secret: true },
+  kill_plague_lord: { name: 'Дезинфекция',           desc: 'Убейте Чумного повелителя',   icon: '☣️', secret: true },
+  kill_chronos:     { name: 'Время вышло',           desc: 'Убейте Хроноса',              icon: '⏰', secret: true },
+  kill_absolute:    { name: 'Абсолютная победа',     desc: 'Убейте Абсолюта',             icon: '👁️', secret: true },
+
   // Мини-боссы
   kill_miniboss:    { name: 'Страж пал',             desc: 'Убейте Стража',               icon: '⚔️', secret: true },
   kill_knight:      { name: 'Рыцарь без доспехов',   desc: 'Убейте Рыцаря',              icon: '🗡️', secret: true },
@@ -83,7 +90,9 @@ const ENEMY_KILL_MAP = {
   titan: 'kill_titan', queen: 'kill_queen', reaper: 'kill_reaper',
   leviathan: 'kill_leviathan', miniboss: 'kill_miniboss', knight: 'kill_knight',
   champion: 'kill_champion', oracle: 'kill_oracle', executioner: 'kill_executioner',
-  voidguard: 'kill_voidguard', shadow: 'kill_shadow', devourer: 'kill_devourer',
+  voidguard: 'kill_voidguard', archon: 'kill_archon', colossus: 'kill_colossus',
+  plague_lord: 'kill_plague_lord', chronos: 'kill_chronos', absolute: 'kill_absolute',
+  shadow: 'kill_shadow', devourer: 'kill_devourer',
   herald: 'kill_herald', shadow_lord: 'kill_shadow_lord',
 };
 

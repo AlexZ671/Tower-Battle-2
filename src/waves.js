@@ -105,14 +105,19 @@ export class WaveManager {
 
     // ═══ Боссы: каждые 10 волн ═══
     if (wave % 10 === 0) {
-      const bossWave = wave % 50 || 50;
+      const bossWave = wave % 100 || 100;
       if (bossWave === 10) queue.push('boss');
       else if (bossWave === 20) queue.push('golem');
       else if (bossWave === 30) queue.push('hydra');
       else if (bossWave === 40) queue.push('titan');
       else if (bossWave === 50) queue.push('leviathan');
-      // Дополнительные боссы за каждый полный цикл 50 волн
-      const cycles = Math.floor((wave - 1) / 50);
+      else if (bossWave === 60) queue.push('archon');
+      else if (bossWave === 70) queue.push('colossus');
+      else if (bossWave === 80) queue.push('plague_lord');
+      else if (bossWave === 90) queue.push('chronos');
+      else if (bossWave === 100) queue.push('absolute');
+      // Дополнительные боссы за каждый полный цикл 100 волн
+      const cycles = Math.floor((wave - 1) / 100);
       for (let i = 0; i < cycles; i++) queue.push('boss');
     }
 

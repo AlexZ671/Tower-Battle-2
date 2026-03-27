@@ -650,7 +650,7 @@ export class Renderer {
       ctx.beginPath(); ctx.ellipse(x + 1, y + radius * 0.6, radius * 0.75, radius * 0.3, 0, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fill();
 
-      const c = enemy.damageFlash > 0 ? '#fff' : (slowTimer > 0 ? '#74b9ff' : color);
+      const c = (!enemy.isBoss && enemy.damageFlash > 0) ? '#fff' : (slowTimer > 0 ? '#74b9ff' : color);
 
       ctx.save(); ctx.translate(x, y);
 
@@ -688,6 +688,11 @@ export class Renderer {
         case 'leviathan': this._enemyLeviathan(ctx, c, radius, time); break;
         case 'reaper': this._enemyReaper(ctx, c, radius, time); break;
         case 'queen': this._enemyQueen(ctx, c, radius, time); break;
+        case 'archon': this._enemyArchon(ctx, c, radius, time); break;
+        case 'colossus': this._enemyColossus(ctx, c, radius, time); break;
+        case 'plague_lord': this._enemyPlagueLord(ctx, c, radius, time); break;
+        case 'chronos': this._enemyChronos(ctx, c, radius, time); break;
+        case 'absolute': this._enemyAbsolute(ctx, c, radius, time); break;
         case 'shadow': this._enemyShadow(ctx, c, radius, time, enemy); break;
         case 'devourer': this._enemyDevourer(ctx, c, radius, time); break;
         case 'herald': this._enemyHerald(ctx, c, radius, time); break;
@@ -1553,6 +1558,281 @@ export class Renderer {
       ctx.fillStyle = '#ff4444';
       ctx.globalAlpha = 0.3 * (1 - spawnPhase / 0.1); ctx.fill(); ctx.globalAlpha = 1;
     }
+  }
+
+  // ═══ Боссы 2-го цикла ═══
+
+  _enemyArchon(ctx, color, r, time) {
+    // Аура тьмы — пульсирующий тёмный круг
+    const auraPulse = 1 + Math.sin(time * 2) * 0.15;
+    ctx.beginPath(); ctx.arc(0, 0, r * 2.5 * auraPulse, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(10,0,30,0.15)'; ctx.fill();
+    // Внешнее кольцо с рунами
+    ctx.save(); ctx.rotate(time * 0.3);
+    ctx.strokeStyle = '#9933ff'; ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4 + Math.sin(time * 3) * 0.2;
+    ctx.beginPath(); ctx.arc(0, 0, r + 6, 0, Math.PI * 2); ctx.stroke();
+    // Руны вокруг
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3;
+      const rx = Math.cos(a) * (r + 6), ry = Math.sin(a) * (r + 6);
+      ctx.fillStyle = '#cc66ff';
+      ctx.beginPath(); ctx.arc(rx, ry, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    // Плащ — шлейф теней
+    for (let i = 0; i < 5; i++) {
+      const a = Math.PI * 0.6 + (i * Math.PI * 0.2) + Math.sin(time * 2 + i) * 0.15;
+      const len = r * 1.5 + Math.sin(time * 3 + i * 2) * 4;
+      ctx.strokeStyle = '#220044'; ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.4 - i * 0.06;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(Math.cos(a) * len * 0.6 + Math.sin(time + i) * 5,
+        Math.sin(a) * len * 0.6, Math.cos(a) * len, Math.sin(a) * len);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // Тело — тёмная сфера с градиентом
+    const bodyGrad = ctx.createRadialGradient(0, -2, 0, 0, 0, r);
+    bodyGrad.addColorStop(0, '#330066');
+    bodyGrad.addColorStop(0.7, color);
+    bodyGrad.addColorStop(1, '#000');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    // Корона из тёмной энергии
+    for (let i = 0; i < 7; i++) {
+      const a = (i * 2 * Math.PI) / 7 - Math.PI / 2 + Math.sin(time * 1.5) * 0.1;
+      const h = r * 0.5 + Math.sin(time * 4 + i * 2) * 3;
+      ctx.fillStyle = '#7700cc';
+      ctx.globalAlpha = 0.6 + Math.sin(time * 5 + i) * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * 0.7 - 1.5, Math.sin(a) * r * 0.7);
+      ctx.lineTo(Math.cos(a) * (r + h), Math.sin(a) * (r + h));
+      ctx.lineTo(Math.cos(a) * r * 0.7 + 1.5, Math.sin(a) * r * 0.7);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Глаза — яркий фиолетовый огонь
+    ctx.fillStyle = '#dd55ff'; ctx.shadowColor = '#dd55ff'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.1, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.1, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.1, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.1, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  _enemyColossus(ctx, color, r, time) {
+    // Землетрясение — вибрация
+    const shake = Math.sin(time * 15) * 0.5;
+    ctx.translate(shake, 0);
+    // Массивная тень
+    ctx.beginPath(); ctx.ellipse(0, r * 0.5, r * 1.1, r * 0.35, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+    // Ноги — толстые колонны
+    ctx.fillStyle = '#4a2a10';
+    ctx.fillRect(-r * 0.6, r * 0.1, r * 0.35, r * 0.5);
+    ctx.fillRect(r * 0.25, r * 0.1, r * 0.35, r * 0.5);
+    // Тело — массивный прямоугольник с закруглением
+    const bodyGrad = ctx.createLinearGradient(0, -r, 0, r * 0.3);
+    bodyGrad.addColorStop(0, '#8B6B3E');
+    bodyGrad.addColorStop(0.5, color);
+    bodyGrad.addColorStop(1, '#3a1a08');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.8, r * 0.2);
+    ctx.lineTo(-r * 0.9, -r * 0.3);
+    ctx.lineTo(-r * 0.5, -r * 0.9);
+    ctx.lineTo(r * 0.5, -r * 0.9);
+    ctx.lineTo(r * 0.9, -r * 0.3);
+    ctx.lineTo(r * 0.8, r * 0.2);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#2a1005'; ctx.lineWidth = 2; ctx.stroke();
+    // Трещины на теле
+    ctx.strokeStyle = '#ff8800'; ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.3 + Math.sin(time * 4) * 0.2;
+    ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.7); ctx.lineTo(-r * 0.1, -r * 0.2);
+    ctx.lineTo(-r * 0.4, r * 0.1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r * 0.2, -r * 0.5); ctx.lineTo(r * 0.35, 0); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Плечи — каменные наросты
+    ctx.fillStyle = '#6b4a2a';
+    ctx.beginPath(); ctx.arc(-r * 0.8, -r * 0.3, r * 0.25, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.8, -r * 0.3, r * 0.25, 0, Math.PI * 2); ctx.fill();
+    // Голова — маленькая каменная
+    ctx.fillStyle = '#7a5a3a';
+    ctx.beginPath(); ctx.arc(0, -r * 0.75, r * 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#3a1a08'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Глаза — красный огонь
+    ctx.fillStyle = '#ff4400'; ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.8, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.8, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  _enemyPlagueLord(ctx, color, r, time) {
+    // Ядовитый туман — аура
+    ctx.beginPath(); ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(50,120,30,0.08)'; ctx.fill();
+    // Частицы яда
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4 + time * 0.5;
+      const dist = r * 1.3 + Math.sin(time * 3 + i * 2) * 5;
+      ctx.globalAlpha = 0.3 + Math.sin(time * 4 + i) * 0.2;
+      ctx.fillStyle = '#66ff33';
+      ctx.beginPath(); ctx.arc(Math.cos(a) * dist, Math.sin(a) * dist, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Тело — болотная масса
+    const bodyGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    bodyGrad.addColorStop(0, '#4a7a2a');
+    bodyGrad.addColorStop(0.6, color);
+    bodyGrad.addColorStop(1, '#0a2a08');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    // Бугристая поверхность
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 2 * Math.PI) / 5 + time * 0.2;
+      const bx = Math.cos(a) * r * 0.6, by = Math.sin(a) * r * 0.6;
+      ctx.fillStyle = '#3a6a1a';
+      ctx.beginPath(); ctx.arc(bx, by, r * 0.2 + Math.sin(time * 3 + i) * 2, 0, Math.PI * 2); ctx.fill();
+    }
+    // Щупальца с ядом
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2 + time * 0.3;
+      const len = r * 1.4 + Math.sin(time * 2 + i * 2) * 5;
+      ctx.strokeStyle = '#44aa22'; ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(Math.cos(a + 0.3) * len * 0.5, Math.sin(a + 0.3) * len * 0.5,
+        Math.cos(a) * len, Math.sin(a) * len);
+      ctx.stroke();
+      // Капля яда на конце
+      ctx.fillStyle = '#88ff44';
+      ctx.globalAlpha = 0.5 + Math.sin(time * 5 + i) * 0.3;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * len, Math.sin(a) * len, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Глаза — ядовито-жёлтые
+    ctx.fillStyle = '#ccff00'; ctx.shadowColor = '#ccff00'; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.arc(-r * 0.25, -r * 0.2, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.25, -r * 0.2, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-r * 0.25, -r * 0.2, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.25, -r * 0.2, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  _enemyChronos(ctx, color, r, time) {
+    // Временные кольца — вращающиеся орбиты
+    for (let i = 0; i < 3; i++) {
+      ctx.save(); ctx.rotate(time * (1.5 - i * 0.5) + i * Math.PI / 3);
+      ctx.strokeStyle = '#4488cc';
+      ctx.globalAlpha = 0.3 + Math.sin(time * 3 + i * 2) * 0.15;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(0, 0, r + 6 + i * 4, r * 0.3 + i * 2, 0, 0, Math.PI * 2); ctx.stroke();
+      // Часовые стрелки на орбитах
+      const dotA = time * (2 + i) + i;
+      ctx.fillStyle = '#88ccff';
+      ctx.beginPath(); ctx.arc(Math.cos(dotA) * (r + 6 + i * 4), Math.sin(dotA) * (r * 0.3 + i * 2), 2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    // Тело — голубая сфера
+    const bodyGrad = ctx.createRadialGradient(-2, -2, 0, 0, 0, r);
+    bodyGrad.addColorStop(0, '#3a7acc');
+    bodyGrad.addColorStop(0.6, color);
+    bodyGrad.addColorStop(1, '#0a1a3a');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#4488cc'; ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.5; ctx.stroke(); ctx.globalAlpha = 1;
+    // Циферблат на теле
+    ctx.strokeStyle = '#88bbdd'; ctx.lineWidth = 1;
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6;
+      const inner = r * 0.6, outer = r * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+      ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+      ctx.stroke();
+    }
+    // Стрелки часов
+    ctx.strokeStyle = '#aaddff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(time * 0.5) * r * 0.5, Math.sin(time * 0.5) * r * 0.5); ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(time * 2) * r * 0.7, Math.sin(time * 2) * r * 0.7); ctx.stroke();
+    // Центр — яркая точка
+    ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#88ccff'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  _enemyAbsolute(ctx, color, r, time) {
+    // Внешний хаос — пульсирующее поле
+    ctx.beginPath(); ctx.arc(0, 0, r * 2.2, 0, Math.PI * 2);
+    const chaosGrad = ctx.createRadialGradient(0, 0, r, 0, 0, r * 2.2);
+    chaosGrad.addColorStop(0, 'rgba(255,0,0,0.05)');
+    chaosGrad.addColorStop(0.5, 'rgba(100,0,200,0.08)');
+    chaosGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = chaosGrad; ctx.fill();
+    // Кольца хаоса
+    for (let i = 0; i < 4; i++) {
+      ctx.save(); ctx.rotate(time * (0.5 + i * 0.3) * (i % 2 ? 1 : -1));
+      ctx.strokeStyle = ['#ff0044', '#aa00ff', '#0088ff', '#ffaa00'][i];
+      ctx.globalAlpha = 0.2 + Math.sin(time * 2 + i) * 0.1;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(0, 0, r + 4 + i * 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    // Тёмные молнии
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3 + time * 0.7;
+      const len = r * 1.6 + Math.sin(time * 5 + i * 2) * 4;
+      ctx.strokeStyle = ['#ff3366', '#9933ff', '#3399ff'][i % 3];
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.3 + Math.sin(time * 8 + i) * 0.2;
+      const j1 = Math.sin(time * 20 + i * 3) * 6;
+      const j2 = Math.cos(time * 15 + i * 2) * 5;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(j1, j2, Math.cos(a) * len * 0.6 + j2, Math.sin(a) * len * 0.6 + j1,
+        Math.cos(a) * len, Math.sin(a) * len);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // Тело — чёрная дыра с многоцветным кольцом
+    const bodyGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    bodyGrad.addColorStop(0, '#000000');
+    bodyGrad.addColorStop(0.4, '#0a0008');
+    bodyGrad.addColorStop(0.8, color);
+    bodyGrad.addColorStop(1, '#220022');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    // Радужная обводка
+    const hue = (time * 50) % 360;
+    ctx.strokeStyle = `hsl(${hue}, 80%, 50%)`;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.6 + Math.sin(time * 3) * 0.3;
+    ctx.stroke(); ctx.globalAlpha = 1;
+    // Внутренний глаз
+    const eyeGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.4);
+    eyeGrad.addColorStop(0, '#ffffff');
+    eyeGrad.addColorStop(0.3, `hsl(${(hue + 180) % 360}, 100%, 60%)`);
+    eyeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = eyeGrad;
+    const eyePulse = 1 + Math.sin(time * 4) * 0.2;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.4 * eyePulse, 0, Math.PI * 2); ctx.fill();
+    // Зрачок
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath(); ctx.arc(-r * 0.05, -r * 0.05, r * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   // ═══ Монстры тьмы ═══
