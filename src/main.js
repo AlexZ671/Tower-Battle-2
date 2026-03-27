@@ -115,6 +115,7 @@ class Game {
     this.gameSpeed = 1;
     this.autoWave = false;
     this.realTime = 0;
+    this._waveEndTracked = true;
 
     this.ui = new UI(this);
     this.setupInput();
@@ -550,6 +551,7 @@ class Game {
           this.gold = Math.max(0, this.gold - enemy.goldSteal);
         } else {
           this.lives--;
+          achievements.onLivesChange(this.lives);
           if (this.lives <= 0) {
             this.lives = 0;
             this.endGame();
@@ -651,12 +653,20 @@ class Game {
     // Трекинг ачивок
     achievements.onGoldChange(this.gold);
     achievements.onTowerCount(this.towers.length);
+    // Типы башен и лвл4
+    const towerTypes = new Set(this.towers.map(t => t.type));
+    achievements.onTowerTypes(towerTypes);
+    const lv4Count = this.towers.filter(t => t.level === 4).length;
+    achievements.onMaxLevelTowers(lv4Count);
+    achievements.onDiamondChange(skinManager.diamonds);
     if (this.waveManager.canStartWave && !this._waveEndTracked) {
       this._waveEndTracked = true;
       achievements.onWaveComplete(this.waveManager.waveNumber);
-      achievements.onSpeedWave(this.gameSpeed);
+      achievements.onSpeedWave(this.gameSpeed, this.waveManager.waveNumber);
       if (this.lives >= livesBeforeWave) {
         achievements.onWaveNoDamage();
+      } else {
+        achievements.onWaveDamageTaken();
       }
     }
     if (this.waveManager.waveActive) {
@@ -718,6 +728,7 @@ class Game {
   endGame() {
     this.gameOver = true;
     this.hideSellTooltip();
+    achievements.onGameOver(this.gold);
     sound.gameOver();
     document.getElementById('game-over').classList.remove('hidden');
     document.getElementById('game-over-wave').textContent =

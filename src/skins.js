@@ -2,6 +2,7 @@
 // Система скинов башен
 // ═══════════════════════════════════════════
 import { sound } from './sound.js';
+import { achievements } from './achievements.js';
 
 // ─── Определения скинов ───
 export const SKINS = {
@@ -87,6 +88,7 @@ export class SkinManager {
     this.diamonds -= skin.cost;
     this.owned[skinId] = true;
     this._save();
+    achievements.onSkinBuy();
     return true;
   }
 
@@ -891,7 +893,16 @@ function _voidShot() {
   env.gain.linearRampToValueAtTime(0.7, t + 0.05);
   env.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
   env.connect(g);
-  const o = sound._osc('sine', 2000, env, t, t + 0.2);
+  const o = sound._osc('sine', 2000, env, t, t + 0.2);  // Внутренний магматический круг (кратер)
+  const craterGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 10);
+  craterGrad.addColorStop(0, gold);
+  craterGrad.addColorStop(0.4, lava);
+  craterGrad.addColorStop(0.8, rock);
+  craterGrad.addColorStop(1, dark);
+  ctx.fillStyle = craterGrad;
+  ctx.globalAlpha = 0.7 + Math.sin(time * 5) * 0.2;
+  ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
   o.frequency.exponentialRampToValueAtTime(80, t + 0.2);
 
   // Второй тон — dissonant

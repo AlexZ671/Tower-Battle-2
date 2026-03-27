@@ -47,6 +47,34 @@ export const ACHIEVEMENTS = {
   // Особые
   no_damage_wave: { name: 'Неприкосновенный', desc: 'Пройдите волну без потери жизней', icon: '✨', secret: false },
   speed_demon:    { name: 'Скоростной демон',  desc: 'Пройдите волну на 10x скорости',  icon: '⏩', secret: false },
+
+  // Волны — продвинутые
+  wave_100:   { name: 'Центурион',          desc: 'Доберитесь до 100 волны',         icon: '🏛️', secret: false },
+  wave_30:    { name: 'Тьма наступает',     desc: 'Доберитесь до 30 волны (ивент тьмы)', icon: '🌑', secret: false },
+
+  // Убийства — продвинутые
+  kills_10000: { name: 'Геноцид',           desc: 'Убейте 10000 врагов',             icon: '💀', secret: false },
+
+  // Башни — продвинутые
+  towers_20:     { name: 'Цитадель',          desc: 'Имейте 20 башен одновременно',    icon: '🏯', secret: false },
+  all_types:     { name: 'Арсенал',           desc: 'Поставьте все 5 типов башен',     icon: '🎯', secret: false },
+  max_army:      { name: 'Полная мощь',       desc: 'Имейте 3 башни 4-го уровня',     icon: '⭐', secret: false },
+
+  // Экономика — продвинутые
+  diamond_50:    { name: 'Ювелир',            desc: 'Накопите 50 алмазов',             icon: '💎', secret: false },
+  buy_skin:      { name: 'Модник',            desc: 'Купите первый скин',              icon: '🎨', secret: false },
+
+  // Монстры тьмы
+  kill_shadow:      { name: 'Свет во тьме',       desc: 'Убейте Тень',                icon: '🔦', secret: true },
+  kill_devourer:    { name: 'Несъедобный',         desc: 'Убейте Пожирателя',          icon: '🍽️', secret: true },
+  kill_herald:      { name: 'Заря',                desc: 'Убейте Сумеречного вестника', icon: '🌅', secret: true },
+  kill_shadow_lord: { name: 'Повелитель света',    desc: 'Убейте Теневого лорда',      icon: '👑', secret: true },
+
+  // Секретные / хардкор
+  no_damage_10:  { name: 'Стена',              desc: '10 волн подряд без потерь',       icon: '🧱', secret: true },
+  survivor:      { name: 'На волоске',         desc: 'Выживите с 1 HP',                icon: '💔', secret: true },
+  rich_death:    { name: 'Жадность',           desc: 'Проиграйте имея 3000+ золота',   icon: '🪙', secret: true },
+  speed_50:      { name: 'Безумие',            desc: 'Дойдите до 50 волны на 10x',     icon: '🤯', secret: true },
 };
 
 // Маппинг тип врага -> ID ачивки
@@ -55,7 +83,8 @@ const ENEMY_KILL_MAP = {
   titan: 'kill_titan', queen: 'kill_queen', reaper: 'kill_reaper',
   leviathan: 'kill_leviathan', miniboss: 'kill_miniboss', knight: 'kill_knight',
   champion: 'kill_champion', oracle: 'kill_oracle', executioner: 'kill_executioner',
-  voidguard: 'kill_voidguard',
+  voidguard: 'kill_voidguard', shadow: 'kill_shadow', devourer: 'kill_devourer',
+  herald: 'kill_herald', shadow_lord: 'kill_shadow_lord',
 };
 
 // ─── Менеджер ачивок ───
@@ -158,12 +187,15 @@ export class AchievementManager {
     if (this.totalKills >= 500) this.unlock('kills_500');
     if (this.totalKills >= 1000) this.unlock('kills_1000');
     if (this.totalKills >= 5000) this.unlock('kills_5000');
+    if (this.totalKills >= 10000) this.unlock('kills_10000');
   }
 
   onWaveComplete(waveNumber) {
     if (waveNumber >= 10) this.unlock('wave_10');
     if (waveNumber >= 25) this.unlock('wave_25');
+    if (waveNumber >= 30) this.unlock('wave_30');
     if (waveNumber >= 50) this.unlock('wave_50');
+    if (waveNumber >= 100) this.unlock('wave_100');
   }
 
   onTowerMerge(newLevel) {
@@ -179,14 +211,46 @@ export class AchievementManager {
 
   onTowerCount(count) {
     if (count >= 10) this.unlock('towers_10');
+    if (count >= 20) this.unlock('towers_20');
+  }
+
+  onTowerTypes(types) {
+    if (types.size >= 5) this.unlock('all_types');
+  }
+
+  onMaxLevelTowers(count) {
+    if (count >= 3) this.unlock('max_army');
   }
 
   onWaveNoDamage() {
+    this._noDamageStreak = (this._noDamageStreak || 0) + 1;
     this.unlock('no_damage_wave');
+    if (this._noDamageStreak >= 10) this.unlock('no_damage_10');
   }
 
-  onSpeedWave(speed) {
+  onWaveDamageTaken() {
+    this._noDamageStreak = 0;
+  }
+
+  onSpeedWave(speed, wave) {
     if (speed >= 10) this.unlock('speed_demon');
+    if (speed >= 10 && wave >= 50) this.unlock('speed_50');
+  }
+
+  onLivesChange(lives) {
+    if (lives === 1) this.unlock('survivor');
+  }
+
+  onGameOver(gold) {
+    if (gold >= 3000) this.unlock('rich_death');
+  }
+
+  onDiamondChange(diamonds) {
+    if (diamonds >= 50) this.unlock('diamond_50');
+  }
+
+  onSkinBuy() {
+    this.unlock('buy_skin');
   }
 
   // ─── Popup (Steam-стиль, снизу-слева) ───
