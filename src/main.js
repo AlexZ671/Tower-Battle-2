@@ -680,7 +680,8 @@ class Game {
   }
 
   async _autoStartWave() {
-    if (!this.waveManager.canStartWave || this._destroyed) return;
+    if (!this.waveManager.canStartWave || this._destroyed || this._autoStarting) return;
+    this._autoStarting = true;
 
     const nextWave = this.waveManager.waveNumber + 1;
 
@@ -711,6 +712,7 @@ class Game {
     this.waveManager.startNextWave(modifiers);
     sound.waveStart();
     this.ui.updateTowerButtons();
+    this._autoStarting = false;
   }
 
   endGame() {
