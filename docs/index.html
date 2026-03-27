@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tower Defense</title>
   <!-- <link rel="stylesheet" href="./src/style.css">  -->
-  <script type="module" crossorigin src="/Tower-Battle-2/assets/index-CWZnqTSW.js"></script>
-  <link rel="stylesheet" crossorigin href="/Tower-Battle-2/assets/index-BLS-NMN8.css">
+  <script type="module" crossorigin src="/Tower-Battle-2/assets/index-CY5EI-7I.js"></script>
+  <link rel="stylesheet" crossorigin href="/Tower-Battle-2/assets/index-kou-TrVP.css">
 </head>
 <body>
   <!-- Главное меню -->
@@ -14,6 +14,10 @@
     <h1 id="menu-title">TOWER DEFENSE</h1>
     <p id="menu-subtitle">Выберите уровень</p>
     <div id="level-cards"></div>
+    <div id="menu-bottom-btns">
+      <button id="menu-ach-btn">🏆 Достижения</button>
+      <button id="menu-skin-btn">💎 Косметика</button>
+    </div>
   </div>
 
   <!-- Игровой контейнер (скрыт до выбора уровня) -->
@@ -34,10 +38,16 @@
         <span class="hud-icon hud-gold">&#9670;</span>
         <span id="hud-gold">200</span>
       </div>
+      <div class="hud-item">
+        <span class="hud-icon hud-diamond">&#9830;</span>
+        <span id="hud-diamonds">0</span>
+      </div>
       <div class="hud-controls">
         <input type="range" id="volume-slider" min="0" max="100" value="30" title="Громкость">
         <button id="speed-btn" title="Скорость игры">1x</button>
         <button id="auto-btn" title="Авто-волны">AUTO</button>
+        <button id="ach-btn" title="Достижения">🏆</button>
+        <button id="skin-btn" title="Косметика">💎</button>
       </div>
     </div>
     <canvas id="game-canvas"></canvas>
@@ -55,6 +65,23 @@
     <div id="global-modifier-title">ИСПЫТАНИЕ СУДЬБЫ</div>
     <div id="global-modifier-subtitle">Выберите карту — модификатор останется навсегда</div>
     <div id="global-modifier-cards"></div>
+  </div>
+
+  <!-- Оверлей подтверждения слияния -->
+  <div id="merge-overlay" class="hidden">
+    <div id="merge-dialog">
+      <div id="merge-title">Улучшение башни</div>
+      <div id="merge-level"></div>
+      <div id="merge-stats"></div>
+      <div id="merge-special"></div>
+      <div id="merge-buttons">
+        <button id="merge-confirm">Улучшить</button>
+        <button id="merge-cancel">Отмена</button>
+      </div>
+      <label id="merge-skip-label">
+        <input type="checkbox" id="merge-skip-check"> Больше не показывать
+      </label>
+    </div>
   </div>
 
   <div id="tower-preview" class="hidden">
