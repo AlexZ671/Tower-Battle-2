@@ -1,5 +1,6 @@
 import { CELL_SIZE } from './map.js';
 import { sound } from './sound.js';
+import { skinManager, playSkinShot } from './skins.js';
 
 export const TOWER_TYPES = {
   gun: {
@@ -57,9 +58,23 @@ export const TOWER_TYPES = {
     chainCount: 3,
     chainRange: 80,
   },
+  artillery: {
+    name: 'Артиллерия',
+    cost: 650,
+    damage: 60,
+    range: 5,
+    fireRate: 2.5,
+    color: '#8B6914',
+    shape: 'pentagon',
+    projectileSpeed: 4,
+    projectileColor: '#c9a227',
+    description: 'Огромный урон по площади, дальний',
+    special: 'splash',
+    splashRadius: 85,
+  },
 };
 
-export const TOWER_ORDER = ['gun', 'cannon', 'sniper', 'tesla'];
+export const TOWER_ORDER = ['gun', 'cannon', 'sniper', 'tesla', 'artillery'];
 
 export const LEVEL_MULTS = {
   1: { dmg: 1.0,  fireRate: 1.0,   range: 1.0  },
@@ -155,11 +170,27 @@ export class Tower {
       }
     }
 
+    // Ослабление урона от Сумеречного вестника
+    let damageWeaken = 1;
+    for (const enemy of enemies) {
+      if (!enemy.alive || enemy.special !== 'damage_weaken') continue;
+      const dx = enemy.x - this.x, dy = enemy.y - this.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= enemy.weakenRadius) {
+        damageWeaken = Math.min(damageWeaken, enemy.weakenFactor);
+      }
+    }
+    this.damageWeaken = damageWeaken;
+
     for (const enemy of enemies) {
       if (!enemy.targetable) continue;
       const dx = enemy.x - this.x;
       const dy = enemy.y - this.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
+      // Стелс-враги: башня видит только на сокращённой дистанции
+      if (enemy.isStealthed) {
+        const detect = enemy.detectRange || 80;
+        if (dist > detect) continue;
+      }
       if (dist <= effectiveRange && enemy.progress > bestProgress) {
         bestProgress = enemy.progress;
         this.target = enemy;
@@ -179,7 +210,7 @@ export class Tower {
 
   shoot(target, enemies, createProjectile, particles, globalMods = null) {
     const dmgMult = globalMods ? globalMods.towerDamageMult : 1;
-    const effectiveDmg = this.damage * dmgMult;
+    const effectiveDmg = this.damage * dmgMult * (this.damageWeaken || 1);
 
     if (this.special === 'chain') {
       const hit = [target];
@@ -220,7 +251,8 @@ export class Tower {
         particles,
       });
       if (particles) particles.emitMuzzle(this.x, this.y, this.angle, this.projectileColor);
-      sound.teslaShoot();
+      const teslaSkin = skinManager.getEquipped('tesla');
+      if (teslaSkin) playSkinShot(teslaSkin.id); else sound.teslaShoot();
 
     } else if (this.type === 'sniper' && this.level === 4) {
       // ═══ Снайпер лвл4: пробивающий луч ═══
@@ -241,7 +273,49 @@ export class Tower {
         particles,
       });
       if (particles) particles.emitMuzzle(this.x, this.y, this.angle, this.projectileColor);
-      sound.beamFire();
+      const sniperSkin = skinManager.getEquipped('sniper');
+      if (sniperSkin) playSkinShot(sniperSkin.id); else sound.beamFire();
+
+    } else if (this.type === 'artillery') {
+      // ═══ Артиллерийский снаряд (баллистика) ═══
+      createProjectile({
+        type: 'artillery_shell',
+        x: this.x,
+        y: this.y,
+        targetX: target.x,
+        targetY: target.y,
+        targetId: target,
+        damage: effectiveDmg,
+        color: this.projectileColor,
+        tower: this,
+        particles,
+      });
+      if (particles) particles.emitMuzzle(this.x, this.y, this.angle, this.projectileColor);
+      const artSkin = skinManager.getEquipped('artillery');
+      if (artSkin) playSkinShot(artSkin.id); else sound.artilleryShoot();
+
+      // ═══ Артиллерия лвл4: двойной залп ═══
+      if (this.level === 4) {
+        const nearEnemies = enemies.filter(e => e.targetable && e !== target);
+        const secondTarget = nearEnemies.length > 0
+          ? nearEnemies.reduce((best, e) => {
+              const dx = e.x - this.x, dy = e.y - this.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              return dist <= this.range && e.progress > (best ? best.progress : -1) ? e : best;
+            }, null) || target
+          : target;
+        createProjectile({
+          type: 'artillery_shell',
+          x: this.x, y: this.y,
+          targetX: secondTarget.x,
+          targetY: secondTarget.y,
+          targetId: secondTarget,
+          damage: effectiveDmg,
+          color: this.projectileColor,
+          tower: this,
+          particles,
+        });
+      }
 
     } else {
       // ═══ Обычный снаряд ═══
@@ -257,7 +331,10 @@ export class Tower {
         particles,
       });
       if (particles) particles.emitMuzzle(this.x, this.y, this.angle, this.projectileColor);
-      if (this.type === 'gun') sound.gunShoot();
+      const shotSkin = skinManager.getEquipped(this.type);
+      if (shotSkin) {
+        playSkinShot(shotSkin.id);
+      } else if (this.type === 'gun') sound.gunShoot();
       else if (this.type === 'cannon') sound.cannonShoot();
       else if (this.type === 'sniper') sound.sniperShoot();
 

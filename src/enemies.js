@@ -173,10 +173,37 @@ export const ENEMY_TYPES = {
     color: '#c0392b', reward: 400, minWave: 40,
     special: 'spawn_walk', spawnInterval: 4, isBoss: true,
   },
+  // ═══════ Монстры Тьмы (с 30 волны) ═══════
+  shadow: {
+    name: 'Тень',
+    hp: 70, speed: 2.8, radius: 8,
+    color: '#1a0a2e', reward: 18, minWave: 30,
+    special: 'stealth', detectRange: 90,
+  },
+  devourer: {
+    name: 'Пожиратель',
+    hp: 250, speed: 0.7, radius: 14,
+    color: '#0d2818', reward: 35, minWave: 30,
+    special: 'gold_steal', goldSteal: 50,
+  },
+  herald: {
+    name: 'Сумеречный вестник',
+    hp: 120, speed: 1.3, radius: 11,
+    color: '#0a1a3a', reward: 28, minWave: 32,
+    special: 'damage_weaken', weakenRadius: 130, weakenFactor: 0.6,
+  },
+  shadow_lord: {
+    name: 'Теневой лорд',
+    hp: 400, speed: 0.6, radius: 17,
+    color: '#0d0015', reward: 70, minWave: 35,
+    special: 'dark_aura', darkRadius: 120, detectRange: 80,
+    isMini: true,
+  },
 };
 
 // Список мини-боссов для волновой генерации
 export const MINIBOSS_TYPES = ['miniboss', 'knight', 'champion', 'oracle', 'executioner', 'voidguard'];
+export const DARK_MINIBOSS_TYPES = ['shadow_lord'];
 
 const TRAIL_LENGTH = 6;
 const TRAIL_INTERVAL = 0.04;
@@ -308,6 +335,30 @@ export class Enemy {
       this.pendingSpawns = [];
     }
 
+    // Тень: невидимость
+    if (this.special === 'stealth') {
+      this.detectRange = def.detectRange;
+      this.stealthed = true;
+    }
+
+    // Пожиратель: воровство золота
+    if (this.special === 'gold_steal') {
+      this.goldSteal = def.goldSteal;
+    }
+
+    // Сумеречный вестник: ослабление урона
+    if (this.special === 'damage_weaken') {
+      this.weakenRadius = def.weakenRadius;
+      this.weakenFactor = def.weakenFactor;
+    }
+
+    // Теневой лорд: аура тьмы (даёт стелс союзникам)
+    if (this.special === 'dark_aura') {
+      this.darkRadius = def.darkRadius;
+      this.detectRange = def.detectRange;
+      this.stealthed = true;
+    }
+
     this.waveNumber = waveNumber;
     this.modifiers = modifiers;
   }
@@ -425,6 +476,22 @@ export class Enemy {
       this.shieldHp = Math.min(this.shieldMaxHp, this.shieldHp + this.shieldMaxHp * this.shieldRegen * dt);
     }
 
+    // ── Теневой лорд: аура тьмы (даёт стелс союзникам) ──
+    if (this.special === 'dark_aura' && allEnemies) {
+      for (const e of allEnemies) {
+        if (!e.alive || e === this) continue;
+        const dx = e.x - this.x, dy = e.y - this.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= this.darkRadius) {
+          e.darkAuraStealthTimer = 0.5; // стелс на 0.5с, обновляется каждый кадр
+        }
+      }
+    }
+
+    // Обновление стелса от ауры тьмы
+    if (this.darkAuraStealthTimer > 0) {
+      this.darkAuraStealthTimer -= dt;
+    }
+
     // ── Матка: спавн на ходу ──
     if (this.special === 'spawn_walk') {
       this.spawnTimer -= dt;
@@ -515,6 +582,10 @@ export class Enemy {
 
   get targetable() {
     return this.alive && !this.phased;
+  }
+
+  get isStealthed() {
+    return this.stealthed || this.darkAuraStealthTimer > 0;
   }
 
   applySlow(factor, duration) {

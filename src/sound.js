@@ -162,6 +162,37 @@ class SoundEngine {
     this._playNoise(0.1, noiseG, t);
   }
 
+  artilleryShoot() {
+    if (!this._ensureContext()) return;
+    const t = this._now();
+    const g = this._gain(0.22);
+
+    // Глубокий тяжёлый бум
+    const env = this.ctx.createGain();
+    env.gain.setValueAtTime(1, t);
+    env.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+    env.connect(g);
+    const o = this._osc('sine', 50, env, t, t + 0.3);
+    o.frequency.exponentialRampToValueAtTime(25, t + 0.3);
+
+    // Средний удар
+    const env2 = this.ctx.createGain();
+    env2.gain.setValueAtTime(0.7, t);
+    env2.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+    env2.connect(g);
+    this._osc('sine', 120, env2, t, t + 0.15);
+
+    // Шум взрыва
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 300;
+    lp.connect(g);
+    const nEnv = this.ctx.createGain();
+    nEnv.gain.setValueAtTime(0.5, t);
+    nEnv.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+    nEnv.connect(lp);
+    this._playNoise(0.25, nEnv, t);
+  }
+
   splashHit() {
     if (!this._ensureContext()) return;
     const t = this._now();
@@ -510,6 +541,38 @@ class SoundEngine {
     env.connect(g);
 
     this._osc('sine', 1000, env, t, t + 0.04);
+  }
+
+  achievementUnlock() {
+    if (!this._ensureContext()) return;
+    const t = this._now();
+    const g = this._gain(0.25);
+
+    // Восходящий мажорный аккорд (до-ми-соль-до)
+    const freqs = [523, 659, 784, 1047];
+    freqs.forEach((freq, i) => {
+      const start = t + i * 0.08;
+      const env = this.ctx.createGain();
+      env.gain.setValueAtTime(0.01, start);
+      env.gain.linearRampToValueAtTime(0.6, start + 0.04);
+      env.gain.exponentialRampToValueAtTime(0.01, start + 0.5);
+      env.connect(g);
+      this._osc('sine', freq, env, start, start + 0.5);
+    });
+
+    // Финальный shimmer
+    const shimEnv = this.ctx.createGain();
+    shimEnv.gain.setValueAtTime(0.01, t + 0.3);
+    shimEnv.gain.linearRampToValueAtTime(0.3, t + 0.4);
+    shimEnv.gain.exponentialRampToValueAtTime(0.01, t + 0.9);
+    shimEnv.connect(g);
+
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 3000;
+    bp.Q.value = 2;
+    bp.connect(shimEnv);
+    this._playNoise(0.6, bp, t + 0.3);
   }
 
   eventWave(tier) {

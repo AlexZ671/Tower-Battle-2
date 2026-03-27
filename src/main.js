@@ -1,6 +1,6 @@
 import './style.css';
 import { CELL_SIZE, LEVELS, pixelToCell, isValidPlacement, grid, loadLevel } from './map.js';
-import { TOWER_TYPES, Tower } from './towers.js';
+import { TOWER_TYPES, Tower, LEVEL_MULTS } from './towers.js';
 import { Enemy } from './enemies.js';
 import { Projectile } from './projectiles.js';
 import { WaveManager } from './waves.js';
@@ -9,6 +9,8 @@ import { UI } from './ui.js';
 import { ParticleSystem } from './particles.js';
 import { createEmptyGlobalModifiers, rollEventTier } from './modifiers.js';
 import { sound } from './sound.js';
+import { achievements } from './achievements.js';
+import { skinManager, showSkinShop } from './skins.js';
 
 // ═══════════════════════════════════════════
 // Главное меню
@@ -74,6 +76,14 @@ function startGame(levelId) {
 
 buildMenu();
 
+document.getElementById('menu-ach-btn').addEventListener('click', () => {
+  achievements.showPanel();
+});
+
+document.getElementById('menu-skin-btn').addEventListener('click', () => {
+  showSkinShop(null);
+});
+
 // ═══════════════════════════════════════════
 // Game
 // ═══════════════════════════════════════════
@@ -104,6 +114,7 @@ class Game {
     this._dragStartPos = null;
     this.gameSpeed = 1;
     this.autoWave = false;
+    this.realTime = 0;
 
     this.ui = new UI(this);
     this.setupInput();
@@ -229,7 +240,11 @@ class Game {
         targetTower.level === drag.tower.level &&
         drag.tower.level < 4
       ) {
-        this._mergeTowers(drag.tower, targetTower);
+        if (localStorage.getItem('skipMergeConfirm') === '1') {
+          this._mergeTowers(drag.tower, targetTower);
+        } else {
+          this._showMergeConfirm(drag.tower, targetTower);
+        }
       }
     };
 
@@ -306,9 +321,12 @@ class Game {
     const speedBtn = document.getElementById('speed-btn');
     if (speedBtn) {
       speedBtn.addEventListener('click', () => {
-        this.gameSpeed = this.gameSpeed === 1 ? 2 : 1;
+        if (this.gameSpeed === 1) this.gameSpeed = 2;
+        else if (this.gameSpeed === 2) this.gameSpeed = 4;
+        else if (this.gameSpeed === 4) this.gameSpeed = 10;
+        else this.gameSpeed = 1;
         speedBtn.textContent = this.gameSpeed + 'x';
-        speedBtn.classList.toggle('active', this.gameSpeed === 2);
+        speedBtn.classList.toggle('active', this.gameSpeed > 1);
       });
     }
 
@@ -318,6 +336,23 @@ class Game {
       autoBtn.addEventListener('click', () => {
         this.autoWave = !this.autoWave;
         autoBtn.classList.toggle('active', this.autoWave);
+      });
+    }
+
+    // Ачивки
+    const achBtn = document.getElementById('ach-btn');
+    if (achBtn) {
+      achBtn.addEventListener('click', () => achievements.showPanel());
+    }
+
+    // Косметика (в игре)
+    const skinBtn = document.getElementById('skin-btn');
+    if (skinBtn) {
+      skinBtn.addEventListener('click', () => {
+        showSkinShop(() => {
+          this.ui.buildTowerPanel();
+          this.ui.updateTowerButtons();
+        });
       });
     }
   }
@@ -333,8 +368,87 @@ class Game {
     target.applyLevel(target.level + 1);
     this.particles.emitDeath(target.x, target.y, target.color, 20);
     sound.towerMerge();
+    achievements.onTowerMerge(target.level);
     this.ui.updateHUD();
     this.ui.updateTowerButtons();
+  }
+
+  _showMergeConfirm(dragged, target) {
+    const overlay = document.getElementById('merge-overlay');
+    const curLevel = target.level;
+    const newLevel = curLevel + 1;
+    const curM = LEVEL_MULTS[curLevel];
+    const newM = LEVEL_MULTS[newLevel];
+
+    document.getElementById('merge-level').textContent =
+      `${target.name}  Лвл ${curLevel} → Лвл ${newLevel}`;
+
+    // Вычисляем % изменения характеристик
+    const dmgPct = Math.round((newM.dmg / curM.dmg - 1) * 100);
+    const frPct = Math.round((1 - newM.fireRate / curM.fireRate) * 100);
+    const rngPct = Math.round((newM.range / curM.range - 1) * 100);
+
+    const statsEl = document.getElementById('merge-stats');
+    statsEl.innerHTML = '';
+
+    const stats = [
+      { label: 'Урон', value: `+${dmgPct}%` },
+      { label: 'Скорость атаки', value: `+${frPct}%` },
+      { label: 'Дальность', value: `+${rngPct}%` },
+    ];
+
+    for (const s of stats) {
+      const row = document.createElement('div');
+      row.className = 'merge-stat-row';
+      row.innerHTML = `
+        <span class="merge-stat-label">${s.label}</span>
+        <span class="merge-stat-value">${s.value}</span>
+      `;
+      statsEl.appendChild(row);
+    }
+
+    // Спецспособности на 4 уровне
+    const specialEl = document.getElementById('merge-special');
+    if (newLevel === 4) {
+      specialEl.classList.add('visible');
+      const specials = {
+        gun: 'Тройная стрельба (2 доп. пули по 35% урона)',
+        cannon: 'Горящая зона после взрыва',
+        sniper: 'Пробивающий луч сквозь всех врагов',
+        tesla: '6 целей в цепи + замедление',
+      };
+      specialEl.textContent = 'Новая способность: ' + (specials[target.type] || '');
+    } else {
+      specialEl.classList.remove('visible');
+    }
+
+    document.getElementById('merge-skip-check').checked = false;
+    overlay.classList.remove('hidden');
+
+    // Обработчики
+    const confirmBtn = document.getElementById('merge-confirm');
+    const cancelBtn = document.getElementById('merge-cancel');
+
+    const cleanup = () => {
+      overlay.classList.add('hidden');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+    };
+
+    const onConfirm = () => {
+      if (document.getElementById('merge-skip-check').checked) {
+        localStorage.setItem('skipMergeConfirm', '1');
+      }
+      cleanup();
+      this._mergeTowers(dragged, target);
+    };
+
+    const onCancel = () => {
+      cleanup();
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
   }
 
   sellTower(tower) {
@@ -426,16 +540,23 @@ class Game {
 
     this.waveManager.update(dt, this.createEnemy.bind(this), this.enemies);
 
+    const livesBeforeWave = this.lives;
+
     for (const enemy of this.enemies) {
       enemy.update(dt, this.enemies);
       if (enemy.reachedEnd) {
-        this.lives--;
-        sound.lifeLost();
-        if (this.lives <= 0) {
-          this.lives = 0;
-          this.endGame();
-          return;
+        if (enemy.special === 'gold_steal') {
+          // Пожиратель ворует золото вместо жизней
+          this.gold = Math.max(0, this.gold - enemy.goldSteal);
+        } else {
+          this.lives--;
+          if (this.lives <= 0) {
+            this.lives = 0;
+            this.endGame();
+            return;
+          }
         }
+        sound.lifeLost();
       }
     }
 
@@ -462,6 +583,13 @@ class Game {
           this.gold += e.reward;
           this.particles.emitDeath(e.x, e.y, e.color, e.radius);
           sound.enemyDeath();
+          achievements.onEnemyKill(e.type);
+          // Дроп алмазов: 3% обычные, 15% мини-боссы, 100% боссы
+          const dropChance = e.isBoss ? 1.0 : e.isMini ? 0.15 : 0.03;
+          if (Math.random() < dropChance) {
+            const amount = e.isBoss ? 5 : e.isMini ? 2 : 1;
+            skinManager.addDiamonds(amount);
+          }
           // Некромант — спавнит бегунов при смерти
           if (e.special === 'death_spawn' && e.deathSpawnCount > 0) {
             for (let s = 0; s < e.deathSpawnCount; s++) {
@@ -519,6 +647,21 @@ class Game {
       proj.update(dt, this.enemies);
     }
     this.projectiles = this.projectiles.filter(p => p.alive);
+
+    // Трекинг ачивок
+    achievements.onGoldChange(this.gold);
+    achievements.onTowerCount(this.towers.length);
+    if (this.waveManager.canStartWave && !this._waveEndTracked) {
+      this._waveEndTracked = true;
+      achievements.onWaveComplete(this.waveManager.waveNumber);
+      achievements.onSpeedWave(this.gameSpeed);
+      if (this.lives >= livesBeforeWave) {
+        achievements.onWaveNoDamage();
+      }
+    }
+    if (this.waveManager.waveActive) {
+      this._waveEndTracked = false;
+    }
 
     this.ui.updateHUD();
     this.ui.updateTowerButtons();
@@ -583,6 +726,7 @@ class Game {
     if (this._destroyed) return;
     const rawDt = Math.min((timestamp - this.lastTime) / 1000, 0.05);
     this.lastTime = timestamp;
+    this.realTime += rawDt;
     const dt = rawDt * this.gameSpeed;
 
     this.update(dt);
@@ -592,8 +736,9 @@ class Game {
       projectiles: this.projectiles,
       placementPreview: this.placementPreview,
       particles: this.particles,
-      time: this.time,
+      time: this.realTime,
       dragState: this.dragState,
+      waveNumber: this.waveManager.waveNumber,
     });
 
     this._rafId = requestAnimationFrame(this.loop);

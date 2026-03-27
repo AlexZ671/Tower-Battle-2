@@ -171,6 +171,8 @@ body {
 
 .hud-hp { color: #f85149; }
 .hud-gold { color: #e3b341; }
+.hud-diamond { color: #b388ff; }
+#hud-diamonds { color: #b388ff; }
 
 #hud-wave { color: #c9d1d9; }
 #hud-lives { color: #f85149; }
@@ -703,6 +705,636 @@ body {
 .global-card-wrapper:not(.flipped):not(.burning):hover .global-card-back {
   border-color: #f0a050;
   box-shadow: 0 0 25px rgba(240, 136, 62, 0.35), inset 0 0 30px rgba(240, 136, 62, 0.1);
+}
+
+/* ─── Окно подтверждения слияния ─── */
+#merge-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 170;
+  backdrop-filter: blur(4px);
+}
+
+#merge-overlay.hidden {
+  display: none;
+}
+
+#merge-dialog {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 24px 32px;
+  min-width: 280px;
+  text-align: center;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  animation: mergeDialogIn 0.3s ease;
+}
+
+@keyframes mergeDialogIn {
+  from { transform: scale(0.9) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+#merge-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #c9d1d9;
+  margin-bottom: 6px;
+}
+
+#merge-level {
+  font-size: 13px;
+  color: #8b949e;
+  margin-bottom: 16px;
+}
+
+#merge-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.merge-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: #0d1117;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.merge-stat-label {
+  color: #8b949e;
+}
+
+.merge-stat-value {
+  font-weight: 700;
+  color: #3fb950;
+}
+
+.merge-stat-value.negative {
+  color: #f85149;
+}
+
+#merge-special {
+  font-size: 11px;
+  color: #f0883e;
+  padding: 8px;
+  background: rgba(240, 136, 62, 0.08);
+  border: 1px solid rgba(240, 136, 62, 0.2);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  display: none;
+}
+
+#merge-special.visible {
+  display: block;
+}
+
+#merge-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+#merge-confirm {
+  padding: 8px 24px;
+  background: #238636;
+  border: 1px solid #2ea043;
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#merge-confirm:hover {
+  background: #2ea043;
+}
+
+#merge-cancel {
+  padding: 8px 24px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #8b949e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#merge-cancel:hover {
+  border-color: #f85149;
+  color: #f85149;
+}
+
+#merge-skip-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #484f58;
+  cursor: pointer;
+}
+
+#merge-skip-check {
+  accent-color: #58a6ff;
+  cursor: pointer;
+}
+
+/* ─── Ачивки: попап (Steam-стиль) ─── */
+#achievement-popup-container {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.achievement-popup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #1a2332 0%, #161b22 100%);
+  border: 1px solid #238636;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(35, 134, 54, 0.3), 0 0 0 1px rgba(35, 134, 54, 0.1);
+  transform: translateX(-120%);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+  min-width: 280px;
+  max-width: 360px;
+}
+
+.achievement-popup.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.achievement-popup.hide {
+  transform: translateX(-120%);
+  opacity: 0;
+  transition: transform 0.4s ease-in, opacity 0.4s;
+}
+
+.ach-popup-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.ach-popup-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ach-popup-label {
+  font-size: 10px;
+  color: #238636;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.ach-popup-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c9d1d9;
+}
+
+.ach-popup-desc {
+  font-size: 11px;
+  color: #8b949e;
+}
+
+/* ─── Ачивки: панель ─── */
+#achievement-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 250;
+  backdrop-filter: blur(6px);
+}
+
+#achievement-overlay.hidden {
+  display: none;
+}
+
+#ach-panel {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 24px;
+  width: 620px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6);
+  animation: mergeDialogIn 0.3s ease;
+}
+
+#ach-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #30363d;
+}
+
+#ach-panel-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c9d1d9;
+  flex: 1;
+}
+
+#ach-panel-progress {
+  font-size: 14px;
+  color: #238636;
+  font-weight: 600;
+}
+
+#ach-panel-close {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+#ach-panel-close:hover {
+  background: #21262d;
+  color: #f85149;
+}
+
+#ach-panel-token {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #0d1117;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #8b949e;
+}
+
+#ach-token-display {
+  color: #58a6ff;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+#ach-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+#ach-panel-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+#ach-panel-grid::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+.ach-card {
+  padding: 14px 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.ach-card.unlocked {
+  border-color: #238636;
+  background: linear-gradient(135deg, #0d1117 0%, #0d1f0d 100%);
+}
+
+.ach-card.unlocked:hover {
+  border-color: #3fb950;
+  box-shadow: 0 0 12px rgba(35, 134, 54, 0.2);
+}
+
+.ach-card.locked {
+  opacity: 0.5;
+}
+
+.ach-card-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.ach-card-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c9d1d9;
+  margin-bottom: 4px;
+}
+
+.ach-card.locked .ach-card-name {
+  color: #484f58;
+}
+
+.ach-card-desc {
+  font-size: 10px;
+  color: #8b949e;
+  line-height: 1.3;
+}
+
+.ach-card.locked .ach-card-desc {
+  color: #484f58;
+}
+
+/* ─── Кнопка ачивок в HUD ─── */
+#ach-btn {
+  padding: 2px 8px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #8b949e;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+#ach-btn:hover {
+  border-color: #238636;
+  color: #3fb950;
+}
+
+#skin-btn {
+  padding: 2px 8px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #8b949e;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+#skin-btn:hover {
+  border-color: #b388ff;
+  color: #b388ff;
+}
+
+#menu-ach-btn {
+  padding: 10px 28px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #c9d1d9;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#menu-ach-btn:hover {
+  border-color: #238636;
+  color: #3fb950;
+  background: #1a2318;
+  box-shadow: 0 0 16px rgba(35, 134, 54, 0.15);
+}
+
+/* ─── Меню косметики (скины) ─── */
+#skin-shop-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 250;
+  backdrop-filter: blur(6px);
+}
+
+#skin-shop-panel {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 24px;
+  width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6);
+  animation: mergeDialogIn 0.3s ease;
+}
+
+#skin-shop-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #30363d;
+}
+
+#skin-shop-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c9d1d9;
+  flex: 1;
+}
+
+#skin-shop-diamonds {
+  font-size: 14px;
+  color: #b388ff;
+  font-weight: 600;
+}
+
+#skin-shop-close {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+#skin-shop-close:hover {
+  background: #21262d;
+  color: #f85149;
+}
+
+#skin-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+#skin-shop-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+#skin-shop-grid::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+.skin-card {
+  padding: 14px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.skin-card.equipped {
+  border-color: #7c4dff;
+  background: linear-gradient(135deg, #0d1117 0%, #1a0d2e 100%);
+  box-shadow: 0 0 12px rgba(124, 77, 255, 0.2);
+}
+
+.skin-card.owned:not(.equipped) {
+  border-color: #238636;
+}
+
+.skin-card:hover {
+  border-color: #58a6ff;
+  transform: translateY(-2px);
+}
+
+.skin-card-canvas {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  background: #0d1117;
+}
+
+.skin-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c9d1d9;
+}
+
+.skin-card-desc {
+  font-size: 10px;
+  color: #8b949e;
+  line-height: 1.3;
+}
+
+.skin-card-tower {
+  font-size: 10px;
+  color: #58a6ff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.skin-card-action button {
+  margin-top: 4px;
+  padding: 5px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid;
+}
+
+.skin-btn-buy {
+  background: #21262d;
+  border-color: #b388ff !important;
+  color: #b388ff;
+}
+
+.skin-btn-buy:hover {
+  background: #1a1030;
+  box-shadow: 0 0 10px rgba(179, 136, 255, 0.2);
+}
+
+.skin-btn-buy.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.skin-btn-equip {
+  background: #238636;
+  border-color: #2ea043 !important;
+  color: white;
+}
+
+.skin-btn-equip:hover {
+  background: #2ea043;
+}
+
+.skin-btn-unequip {
+  background: #21262d;
+  border-color: #30363d !important;
+  color: #8b949e;
+}
+
+.skin-btn-unequip:hover {
+  border-color: #f85149 !important;
+  color: #f85149;
+}
+
+#menu-skin-btn {
+  padding: 10px 28px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #c9d1d9;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#menu-skin-btn:hover {
+  border-color: #b388ff;
+  color: #b388ff;
+  background: #1a1030;
+  box-shadow: 0 0 16px rgba(179, 136, 255, 0.15);
+}
+
+#menu-bottom-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
 }
 
 /* ─── Продажа башни ─── */

@@ -47,6 +47,25 @@ export class Projectile {
       this.timer = data.timer;
       this.maxTimer = data.timer;
       this.alive = true;
+    } else if (this.type === 'artillery_shell') {
+      this.startX = data.x;
+      this.startY = data.y;
+      this.x = data.x;
+      this.y = data.y;
+      this.targetX = data.targetX;
+      this.targetY = data.targetY;
+      this.target = data.targetId;
+      this.damage = data.damage;
+      this.color = data.color;
+      this.tower = data.tower;
+      this.alive = true;
+      this.radius = 5;
+      this.particles = data.particles || null;
+      // Время полёта зависит от дистанции
+      const fdx = data.targetX - data.x, fdy = data.targetY - data.y;
+      this.flightDuration = Math.max(0.35, Math.sqrt(fdx * fdx + fdy * fdy) / 300);
+      this.flightTime = 0;
+      this.arcHeight = Math.max(30, Math.sqrt(fdx * fdx + fdy * fdy) * 0.4);
     }
   }
 
@@ -78,6 +97,30 @@ export class Projectile {
             e.takeDamage(this.tickDamage);
           }
         }
+      }
+      return;
+    }
+
+    // Artillery shell (баллистика)
+    if (this.type === 'artillery_shell') {
+      this.flightTime += dt;
+      const t = Math.min(this.flightTime / this.flightDuration, 1);
+      // Обновляем цель если жива (корректировка наведения)
+      if (this.target && this.target.alive) {
+        this.targetX = this.target.x;
+        this.targetY = this.target.y;
+      }
+      // Линейная интерполяция по X/Y + параболическая дуга по высоте
+      this.x = this.startX + (this.targetX - this.startX) * t;
+      this.y = this.startY + (this.targetY - this.startY) * t;
+      // Высота параболы: 0 на краях, max в середине
+      this.heightOffset = -this.arcHeight * 4 * t * (1 - t);
+      // Визуальный масштаб (больше в воздухе)
+      this.visualScale = 1 + 0.5 * Math.sin(t * Math.PI);
+
+      if (t >= 1) {
+        this.alive = false;
+        this.hit(this.target && this.target.alive ? this.target : { x: this.targetX, y: this.targetY, alive: false }, enemies);
       }
       return;
     }

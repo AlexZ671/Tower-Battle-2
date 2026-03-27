@@ -1,4 +1,5 @@
 import { CELL_SIZE, COLS, ROWS, grid, paths } from './map.js';
+import { skinManager, drawGunSkin, drawSniperSkin, drawCannonSkin, drawTeslaSkin, drawArtillerySkin } from './skins.js';
 
 // ─── Standalone drawShape (для UI-иконок) ───
 export function drawShape(ctx, shape, x, y, radius, color, angle = 0) {
@@ -287,6 +288,99 @@ export function drawTeslaTower(ctx, color, angle, time, level = 1) {
   ctx.globalAlpha = 1;
 }
 
+export function drawArtilleryTower(ctx, color, angle, time, level = 1) {
+  const darker = _darken(color, 0.35);
+  const darkest = _darken(color, 0.6);
+
+  // Массивная пятиугольная платформа
+  ctx.fillStyle = darker;
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+    if (i === 0) ctx.moveTo(Math.cos(a) * 15, Math.sin(a) * 15);
+    else ctx.lineTo(Math.cos(a) * 15, Math.sin(a) * 15);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Внутренний круг бронекорпус
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1; ctx.stroke();
+
+  // Опорные амортизаторы
+  ctx.strokeStyle = darkest; ctx.lineWidth = 2.5;
+  for (let i = 0; i < 5; i++) {
+    const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * 6, Math.sin(a) * 6);
+    ctx.lineTo(Math.cos(a) * 13, Math.sin(a) * 13);
+    ctx.stroke();
+  }
+
+  // Заклёпки
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  for (let i = 0; i < 5; i++) {
+    const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * 8, Math.sin(a) * 8, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Вращающийся ствол
+  ctx.save(); ctx.rotate(angle);
+
+  // Тяжёлый корпус орудия (расширяющийся к базе)
+  ctx.fillStyle = darkest;
+  ctx.beginPath();
+  ctx.moveTo(-2, -8); ctx.lineTo(6, -6);
+  ctx.lineTo(6, 6); ctx.lineTo(-2, 8);
+  ctx.closePath(); ctx.fill();
+
+  // Одно большое дуло (гаубица)
+  ctx.fillStyle = '#7a7a7a';
+  ctx.beginPath(); ctx.roundRect(5, -6, 20, 12, 2); ctx.fill();
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 0.8; ctx.stroke();
+
+  // Внутренний канал ствола
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.roundRect(7, -4, 16, 8, 1); ctx.fill();
+
+  // Обручи усиления на стволе
+  ctx.fillStyle = '#666'; ctx.strokeStyle = '#444'; ctx.lineWidth = 0.6;
+  for (const x of [9, 15, 21]) {
+    ctx.beginPath(); ctx.roundRect(x, -7, 2.5, 14, 0.5); ctx.fill(); ctx.stroke();
+  }
+
+  // Массивный дульный срез
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.roundRect(24, -7.5, 4, 15, 1.5); ctx.fill();
+  ctx.strokeStyle = '#444'; ctx.lineWidth = 1; ctx.stroke();
+  // Жерло
+  ctx.fillStyle = '#222';
+  ctx.beginPath(); ctx.arc(27, 0, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.arc(27, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+
+  // Дульная вспышка
+  const flash = Math.sin(time * 10) * 0.5 + 0.5;
+  if (flash > 0.65) {
+    const alpha = (flash - 0.65) * 2.5;
+    ctx.fillStyle = `rgba(255,180,40,${alpha})`;
+    ctx.beginPath(); ctx.arc(29, 0, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,240,150,${alpha * 0.5})`;
+    ctx.beginPath(); ctx.arc(29, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+
+  // Центральный индикатор
+  ctx.fillStyle = '#c9a227';
+  ctx.globalAlpha = 0.5 + Math.sin(time * 3) * 0.3;
+  ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
 function _darken(hex, amount) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -433,11 +527,23 @@ export class Renderer {
       ctx.save(); ctx.translate(x, y);
       if (tower.disabledTimer > 0) ctx.globalAlpha = 0.4;
 
-      switch (type) {
-        case 'gun': drawGunTower(ctx, color, angle, time, level); break;
-        case 'cannon': drawCannonTower(ctx, color, angle, time, level); break;
-        case 'sniper': drawSniperTower(ctx, color, angle, time, level); break;
-        case 'tesla': drawTeslaTower(ctx, color, angle, time, level); break;
+      const skin = skinManager.getEquipped(type);
+      if (skin) {
+        switch (type) {
+          case 'gun': drawGunSkin(ctx, angle, time); break;
+          case 'cannon': drawCannonSkin(ctx, angle, time); break;
+          case 'sniper': drawSniperSkin(ctx, angle, time); break;
+          case 'tesla': drawTeslaSkin(ctx, angle, time); break;
+          case 'artillery': drawArtillerySkin(ctx, angle, time); break;
+        }
+      } else {
+        switch (type) {
+          case 'gun': drawGunTower(ctx, color, angle, time, level); break;
+          case 'cannon': drawCannonTower(ctx, color, angle, time, level); break;
+          case 'sniper': drawSniperTower(ctx, color, angle, time, level); break;
+          case 'tesla': drawTeslaTower(ctx, color, angle, time, level); break;
+          case 'artillery': drawArtilleryTower(ctx, color, angle, time, level); break;
+        }
       }
 
       if (tower.disabledTimer > 0) {
@@ -504,11 +610,21 @@ export class Renderer {
       ctx.translate(currentX, currentY);
       ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI * 2);
       ctx.fillStyle = '#0c1018'; ctx.fill();
-      switch (tower.type) {
-        case 'gun': drawGunTower(ctx, tower.color, tower.angle, time, tower.level); break;
-        case 'cannon': drawCannonTower(ctx, tower.color, tower.angle, time, tower.level); break;
-        case 'sniper': drawSniperTower(ctx, tower.color, tower.angle, time, tower.level); break;
-        case 'tesla': drawTeslaTower(ctx, tower.color, tower.angle, time, tower.level); break;
+      const dragSkin = skinManager.getEquipped(tower.type);
+      if (dragSkin) {
+        switch (tower.type) {
+          case 'gun': drawGunSkin(ctx, tower.angle, time); break;
+          case 'cannon': drawCannonSkin(ctx, tower.angle, time); break;
+          case 'sniper': drawSniperSkin(ctx, tower.angle, time); break;
+          case 'tesla': drawTeslaSkin(ctx, tower.angle, time); break;
+        }
+      } else {
+        switch (tower.type) {
+          case 'gun': drawGunTower(ctx, tower.color, tower.angle, time, tower.level); break;
+          case 'cannon': drawCannonTower(ctx, tower.color, tower.angle, time, tower.level); break;
+          case 'sniper': drawSniperTower(ctx, tower.color, tower.angle, time, tower.level); break;
+          case 'tesla': drawTeslaTower(ctx, tower.color, tower.angle, time, tower.level); break;
+        }
       }
       ctx.restore();
     }
@@ -540,6 +656,10 @@ export class Renderer {
 
       // Фантом в фазе — полупрозрачный
       if (enemy.phased) ctx.globalAlpha = 0.25;
+      // Стелс от ауры тьмы — мерцание
+      else if (enemy.darkAuraStealthTimer > 0 && enemy.special !== 'dark_aura' && enemy.special !== 'stealth') {
+        ctx.globalAlpha = 0.35 + Math.sin(time * 10) * 0.1;
+      }
 
       switch (type) {
         case 'runner': this._enemyRunner(ctx, c, radius, time); break;
@@ -568,6 +688,10 @@ export class Renderer {
         case 'leviathan': this._enemyLeviathan(ctx, c, radius, time); break;
         case 'reaper': this._enemyReaper(ctx, c, radius, time); break;
         case 'queen': this._enemyQueen(ctx, c, radius, time); break;
+        case 'shadow': this._enemyShadow(ctx, c, radius, time, enemy); break;
+        case 'devourer': this._enemyDevourer(ctx, c, radius, time); break;
+        case 'herald': this._enemyHerald(ctx, c, radius, time); break;
+        case 'shadow_lord': this._enemyShadowLord(ctx, c, radius, time); break;
         default:
           ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2);
           ctx.fillStyle = c; ctx.fill();
@@ -1431,6 +1555,152 @@ export class Renderer {
     }
   }
 
+  // ═══ Монстры тьмы ═══
+  _enemyShadow(ctx, color, r, time, enemy) {
+    // Мерцающая тень — полупрозрачная, пульсирует
+    const flicker = 0.3 + Math.sin(time * 12) * 0.15 + Math.sin(time * 7.3) * 0.1;
+    ctx.globalAlpha = flicker;
+    // Дымчатый шлейф
+    for (let i = 0; i < 3; i++) {
+      const ox = Math.sin(time * 5 + i * 2) * 3;
+      const oy = Math.cos(time * 4 + i * 3) * 3;
+      ctx.beginPath(); ctx.arc(ox, oy, r * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a0a2e'; ctx.fill();
+    }
+    // Ядро
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+    // Глаза — два тусклых огонька
+    ctx.globalAlpha = 0.6 + Math.sin(time * 8) * 0.3;
+    ctx.fillStyle = '#9966ff';
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.2, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.2, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  _enemyDevourer(ctx, color, r, time) {
+    // Тёмно-зелёная тварь с пастью
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = '#0f4020'; ctx.lineWidth = 2; ctx.stroke();
+    // Броня-чешуя
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3 + time * 0.3;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, r * 0.25, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,255,80,0.15)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // Пасть
+    const mouthOpen = 0.3 + Math.sin(time * 3) * 0.15;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(0, r * 0.1, r * 0.5, -mouthOpen, Math.PI + mouthOpen, true);
+    ctx.fill();
+    // Зубы
+    ctx.fillStyle = '#44ff88';
+    for (let i = 0; i < 4; i++) {
+      const angle = -mouthOpen + (Math.PI + 2 * mouthOpen) * (i / 3);
+      const tx = Math.cos(angle) * r * 0.5;
+      const ty = r * 0.1 + Math.sin(angle) * r * 0.5;
+      ctx.beginPath(); ctx.arc(tx, ty, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+    // Жадные глаза (золотые — символ золота)
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.35, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.35, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.35, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.35, 1, 0, Math.PI * 2); ctx.fill();
+  }
+
+  _enemyHerald(ctx, color, r, time) {
+    // Аура ослабления — тёмно-синее кольцо
+    ctx.beginPath(); ctx.arc(0, 0, r + 8, 0, Math.PI * 2);
+    ctx.strokeStyle = '#2244aa';
+    ctx.globalAlpha = 0.15 + Math.sin(time * 3) * 0.1;
+    ctx.lineWidth = 3; ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Тело — тёмно-синий ромб
+    ctx.save(); ctx.rotate(time * 0.5);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, -r); ctx.lineTo(r * 0.7, 0);
+    ctx.lineTo(0, r); ctx.lineTo(-r * 0.7, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#3355cc'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.restore();
+    // Внутренний символ — пульсирующий глаз
+    ctx.fillStyle = '#4466dd';
+    ctx.globalAlpha = 0.5 + Math.sin(time * 5) * 0.3;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#88aaff';
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.15, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    // Лучи подавления
+    ctx.strokeStyle = '#2244aa'; ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2 + time;
+      const len = r * 0.9 + Math.sin(time * 4 + i) * 3;
+      ctx.globalAlpha = 0.25;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  _enemyShadowLord(ctx, color, r, time) {
+    // Аура тьмы — тёмная пульсирующая зона
+    const auraPulse = 1 + Math.sin(time * 2) * 0.1;
+    ctx.beginPath(); ctx.arc(0, 0, r * 2 * auraPulse, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(10,0,30,0.12)'; ctx.fill();
+    ctx.strokeStyle = '#330066';
+    ctx.globalAlpha = 0.25 + Math.sin(time * 3) * 0.15;
+    ctx.lineWidth = 2; ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Тёмные частицы вокруг
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4 + time * 0.7;
+      const dist = r * 1.2 + Math.sin(time * 3 + i * 1.5) * 4;
+      const px = Math.cos(a) * dist;
+      const py = Math.sin(a) * dist;
+      ctx.globalAlpha = 0.3 + Math.sin(time * 5 + i) * 0.2;
+      ctx.fillStyle = '#6600cc';
+      ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Корона/рога
+    ctx.fillStyle = '#220044';
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+      const bx = Math.cos(a) * r * 0.8;
+      const by = Math.sin(a) * r * 0.8;
+      const tx = Math.cos(a) * r * 1.3;
+      const ty = Math.sin(a) * r * 1.3;
+      ctx.beginPath();
+      ctx.moveTo(bx - 2, by); ctx.lineTo(tx, ty); ctx.lineTo(bx + 2, by);
+      ctx.closePath(); ctx.fill();
+    }
+    // Тело — тёмная сфера
+    const bodyGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    bodyGrad.addColorStop(0, '#220044');
+    bodyGrad.addColorStop(0.6, color);
+    bodyGrad.addColorStop(1, '#000');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#6600cc'; ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.6; ctx.stroke(); ctx.globalAlpha = 1;
+    // Глаза — фиолетовый огонь
+    ctx.fillStyle = '#cc44ff';
+    ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.15, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.15, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    // Яркие зрачки
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.15, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.15, 1, 0, Math.PI * 2); ctx.fill();
+  }
+
   drawProjectiles(projectiles) {
     const ctx = this.ctx;
     for (const p of projectiles) {
@@ -1478,6 +1748,49 @@ export class Renderer {
         ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(endX, endY); ctx.stroke();
         ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+        ctx.restore();
+
+      } else if (p.type === 'artillery_shell') {
+        // Баллистический снаряд — рисуется со смещением по высоте
+        const drawY = p.y + (p.heightOffset || 0);
+        const scale = p.visualScale || 1;
+        const t = p.flightTime / p.flightDuration;
+
+        // Тень на земле
+        ctx.globalAlpha = 0.2 * (1 - Math.abs(t - 0.5) * 1.5);
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, 5 * scale, 2 * scale, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Снаряд
+        ctx.save();
+        ctx.translate(p.x, drawY);
+        ctx.scale(scale, scale);
+
+        // Огненный хвост
+        const tailLen = 8 + Math.sin(p.flightTime * 30) * 3;
+        const dx = p.targetX - p.startX, dy = p.targetY - p.startY;
+        const ang = Math.atan2(dy, dx);
+        ctx.globalAlpha = 0.6;
+        const tailGrad = ctx.createLinearGradient(0, 0, -Math.cos(ang) * tailLen, -Math.sin(ang) * tailLen);
+        tailGrad.addColorStop(0, p.color);
+        tailGrad.addColorStop(1, 'rgba(255,100,0,0)');
+        ctx.strokeStyle = tailGrad; ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-Math.cos(ang) * tailLen, -Math.sin(ang) * tailLen);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Корпус снаряда
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(0, 0, p.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+        // Яркое ядро
+        ctx.fillStyle = '#ffe066';
+        ctx.beginPath(); ctx.arc(0, 0, p.radius * 0.4, 0, Math.PI * 2); ctx.fill();
+
         ctx.restore();
 
       } else {
@@ -1532,5 +1845,27 @@ export class Renderer {
     this.drawEnemies(gameState.enemies, this.time);
     this.drawTowers(gameState.towers, this.time, gameState.dragState || null);
     this.drawProjectiles(gameState.projectiles);
+
+    // Эффект тьмы с 30 волны — виньетка по краям
+    if (gameState.waveNumber >= 30) {
+      this._drawDarknessOverlay(gameState.waveNumber);
+    }
+  }
+
+  _drawDarknessOverlay(wave) {
+    const ctx = this.ctx;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    // Интенсивность нарастает: 30 волна = 0.08, 50 волна = 0.2
+    const intensity = Math.min(0.25, 0.08 + (wave - 30) * 0.006);
+    const cx = w / 2, cy = h / 2;
+    const outerR = Math.sqrt(cx * cx + cy * cy);
+    const innerR = outerR * 0.45;
+    const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+    grad.addColorStop(0, 'rgba(5,0,15,0)');
+    grad.addColorStop(0.5, `rgba(5,0,15,${intensity * 0.4})`);
+    grad.addColorStop(1, `rgba(5,0,15,${intensity})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
   }
 }

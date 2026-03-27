@@ -1,4 +1,4 @@
-import { ENEMY_TYPES, MINIBOSS_TYPES } from './enemies.js';
+import { ENEMY_TYPES, MINIBOSS_TYPES, DARK_MINIBOSS_TYPES } from './enemies.js';
 import { paths } from './map.js';
 
 export class WaveManager {
@@ -124,6 +124,29 @@ export class WaveManager {
     // ═══ Матка: волна 40+, 30% шанс чётная волна (не боссовая) ═══
     if (wave >= 40 && wave % 2 === 0 && wave % 10 !== 0 && Math.random() < 0.3) {
       queue.push('queen');
+    }
+
+    // ═══════ Ивент Тьмы: с 30 волны ═══════
+    if (wave >= 30) {
+      const darkTypes = ['shadow', 'devourer', 'herald'];
+      const availableDark = darkTypes.filter(t => wave >= ENEMY_TYPES[t].minWave);
+      // Количество монстров тьмы растёт с волнами
+      const darkCount = Math.min(8, 2 + Math.floor((wave - 30) / 3));
+      for (let i = 0; i < darkCount; i++) {
+        const type = availableDark[Math.floor(Math.random() * availableDark.length)];
+        // Тени идут группами
+        if (type === 'shadow') {
+          queue.splice(Math.floor(Math.random() * queue.length), 0, 'shadow');
+          if (Math.random() < 0.5) queue.splice(Math.floor(Math.random() * queue.length), 0, 'shadow');
+        } else {
+          queue.splice(Math.floor(Math.random() * queue.length), 0, type);
+        }
+      }
+
+      // Теневой лорд: с 35 волны, каждые 5 волн + 25% шанс в остальные
+      if (wave >= 35 && (wave % 5 === 0 || Math.random() < 0.25)) {
+        queue.splice(Math.floor(queue.length * 0.4), 0, 'shadow_lord');
+      }
     }
 
     return queue;

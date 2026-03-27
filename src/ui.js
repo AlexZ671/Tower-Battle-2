@@ -4,15 +4,26 @@ import {
   drawCannonTower,
   drawSniperTower,
   drawTeslaTower,
+  drawArtilleryTower,
 } from './renderer.js';
 import { pickRandomModifiers, createEmptyModifiers, pickRandomGlobalModifiers, pickHardModifiers } from './modifiers.js';
 import { sound } from './sound.js';
+import { skinManager, drawGunSkin, drawSniperSkin, drawCannonSkin, drawTeslaSkin, drawArtillerySkin } from './skins.js';
 
 const TOWER_DRAW_FN = {
   gun: drawGunTower,
   cannon: drawCannonTower,
   sniper: drawSniperTower,
   tesla: drawTeslaTower,
+  artillery: drawArtilleryTower,
+};
+
+const SKIN_DRAW_FN = {
+  gun: drawGunSkin,
+  cannon: drawCannonSkin,
+  sniper: drawSniperSkin,
+  tesla: drawTeslaSkin,
+  artillery: drawArtillerySkin,
 };
 
 const PREVIEW_SIZE = 160;
@@ -58,8 +69,13 @@ export class UI {
       iconCtx.save();
       iconCtx.translate(16, 16);
       iconCtx.scale(0.75, 0.75);
-      const drawFn = TOWER_DRAW_FN[type];
-      if (drawFn) drawFn(iconCtx, def.color, 0, 0);
+      const skin = skinManager.getEquipped(type);
+      if (skin) {
+        SKIN_DRAW_FN[type](iconCtx, 0, 0);
+      } else {
+        const drawFn = TOWER_DRAW_FN[type];
+        if (drawFn) drawFn(iconCtx, def.color, 0, 0);
+      }
       iconCtx.restore();
 
       const nameSpan = document.createElement('span');
@@ -132,6 +148,8 @@ export class UI {
     this.hudWave.textContent = `Волна: ${this.game.waveManager.waveNumber || '—'}`;
     this.hudLives.textContent = `HP: ${this.game.lives}`;
     this.hudGold.textContent = `${this.game.gold}`;
+    const diamondsEl = document.getElementById('hud-diamonds');
+    if (diamondsEl) diamondsEl.textContent = `${skinManager.diamonds}`;
   }
 
   // ─── Карточки модификаторов ───
